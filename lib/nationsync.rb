@@ -3,3 +3,4 @@ module NationSync
 end
 
 require 'nationsync/api'
+require 'nationsync/auth'
