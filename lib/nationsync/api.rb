@@ -1,3 +1,7 @@
+require 'faraday'
+require 'faraday_middleware'
+require 'rack'
+
 module NationSync
 
   class API
@@ -29,6 +33,42 @@ module NationSync
   
     def pages
       @conn.get("/admin/theme_tool_api/pages.json").body["pages"]
+    end
+    
+    def theme_asset_put(theme_id, fn, value)
+      @conn.put do |req|
+        req.url "/admin/theme_tool_api/themes/#{theme_id}/assets.json"
+        req.params = {}
+        # req.body = JSON.dump({
+        req.body = Rack::Utils.build_nested_query({
+          "access_token" => @access_token,
+          "asset" => {
+            "key" => fn,
+            "value" => value
+          }
+        })
+      end
+      # data: {
+      #   access_token: nation.get("accessToken"),
+      #   asset: {
+      #     key: file.filename,
+      #     value: value,
+      #     attachment: attachment
+      #   }
+      # },
+    end
+    def theme_asset_put_attachment(theme_id, fn, value)
+      @conn.put do |req|
+        req.url "/admin/theme_tool_api/themes/#{theme_id}/assets.json"
+        req.params = {}
+        req.body = Rack::Utils.build_nested_query({
+          "access_token" => @access_token,
+          "asset" => {
+            "key" => fn,
+            "attachment" => Base64.encode64(value)
+          }
+        })
+      end
     end
   
   
