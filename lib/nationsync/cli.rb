@@ -68,7 +68,8 @@ class NationSyncThor < Thor
           puts "- Skipping #{fn}"
         end
         type = MIME::Types.type_for(fn).first
-        if type.binary?
+        is_binary = type && type.binary?
+        if is_binary
           resp = @api.theme_asset_put_attachment(@config["theme_id"], fn, File.read(path))
         else
           resp = @api.theme_asset_put(@config["theme_id"], fn, File.read(path))
@@ -76,7 +77,7 @@ class NationSyncThor < Thor
         
         if resp.status == 200
           if resp.body["success"].to_s == "true"
-            puts "- Updated #{fn}" + (type.binary? ? " (binary)" : "")
+            puts "- Updated #{fn}" + (is_binary ? " (binary)" : "")
           else
             puts "- #{HL.color("Error", :red) } updating #{fn}:"
             errors = resp.body["errors"]
