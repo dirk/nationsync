@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-$:.unshift File.dirname(__FILE__) + '/../lib'
+if File.expand_path(File.dirname(__FILE__)).include? "nationsync/bin"
+  $:.unshift File.dirname(__FILE__) + '/../lib'
+end
 require 'nationsync/cli'
 
