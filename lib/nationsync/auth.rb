@@ -5,13 +5,13 @@ module NationSync
   class Auth
     attr_reader :access_token, :session_id
     attr_accessor :domain, :email, :password
-    
+
     def initialize(domain, email, password)
       @domain   = domain
       @email    = email
       @password = password
     end
-    
+
     def authenticate!
       agent = Mechanize.new
       # Disallow redirect
@@ -28,15 +28,28 @@ module NationSync
 
       # Submit the form
       resp = signin.submit()
+
+      if resp.body.include? "Password and email do not match"
+        puts "Password and email do not match"
+        return false
+      end
       # Returns a redirect we have to follow to finish up the authorization.
-      auth = agent.get resp.header["Location"]
+      puts "Redirect to " + resp.header["location"]
+      auth = agent.get resp.header["location"]
+
+      # If there's no "Location" header then assume we've been shown an
+      # authorization confirmation screen and submit the confirmation form
+      if auth.header["location"].nil? # app://com.nationbuildertheme/index.html?code=[blah]"
+        confirm = auth.forms.select {|f| f.action == "/oauth/authorize" }.first
+        auth = confirm.submit
+      end
       # Following the auth redirect we get another redirect to:
       # app://com.nationbuildertheme/index.html?code=[blah]"
-      redirect = auth.header["Location"]
+      redirect = auth.header["location"]
       # Extract the code from the redirect
       code = redirect.match(/code=([a-f0-9]+)/)[1]
       # And then exchange the code for an access_token.
-      resp = HTTParty.get "https://southforward.nationbuilder.com/admin/theme_tool_api/exchange?code=#{code}"
+      resp = HTTParty.get "https://#{@domain}.nationbuilder.com/admin/theme_tool_api/exchange?code=#{code}"
       body = JSON.parse(resp.body)
       @access_token = body["access_token"]
       #puts "access_token: #{access_token}"
@@ -45,7 +58,7 @@ module NationSync
       #puts "session_id: (_nbuild_session) #{session_id}"
       return true
     end
-    
-    
+
+
   end#API
 end#NationSync

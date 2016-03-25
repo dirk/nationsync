@@ -6,10 +6,10 @@ require 'pp'
 
 class NationSyncThor < Thor
   HL = HighLine.new
-  
+
   no_commands do
     def load_project_file
-      
+
     end
     def cwd
       Dir.pwd
@@ -30,19 +30,22 @@ class NationSyncThor < Thor
       File.open(fn, 'w') { |f| YAML.dump(@config, f) }
     end
   end#/no_commands
-  
+
   desc "init", "Initialize a theme in this directory"
   def init
     puts "Creating .nbconfig1"
     domain   = HL.ask("Domain: ").to_s
     email    = HL.ask("Email: ").to_s
     password = HL.ask("Password: ") {|q| q.echo = false }.to_s
-    
-    print "Fetching credentials..."
+
+    puts "Fetching credentials for #{domain}"
+
     auth = NationSync::Auth.new(domain, email, password)
-    auth.authenticate!
-    puts " Done"
-    
+    success = auth.authenticate!
+    return false unless success
+
+    puts "Successfully fetched credentials"
+
     @config = {
       "domain" => domain,
       "email"  => email,
@@ -50,9 +53,10 @@ class NationSyncThor < Thor
       "session_id" => auth.session_id
     }
     save_config!
-    puts "Created: #{fn}"
+    puts "Created .nbconfig1\n"
+    puts 'Now run "nationsync pick_theme" to pick the theme you want to sync'
   end
-  
+
   desc "watch", "Watch current directory for changes"
   def watch
     setup_config
@@ -74,7 +78,7 @@ class NationSyncThor < Thor
         else
           resp = @api.theme_asset_put(@config["theme_id"], fn, File.read(path))
         end
-        
+
         if resp.status == 200
           if resp.body["success"].to_s == "true"
             puts "- Updated #{fn}" + (is_binary ? " (binary)" : "")
@@ -105,7 +109,7 @@ class NationSyncThor < Thor
     puts "Listening for changes in #{Dir.getwd}"
     sleep
   end#watch
-  
+
   desc "clear", "Removes asset files according to manifest in .nbconfig1"
   def clear
     setup_config
@@ -122,7 +126,7 @@ class NationSyncThor < Thor
     save_config!
     puts " Done"
   end
-  
+
   desc "fetch", "Fetch files"
   def fetch
     setup_config
@@ -152,7 +156,7 @@ class NationSyncThor < Thor
     @config["asset_keys"] = assets.map {|a| a["key"] }
     save_config!
   end
-  
+
   desc "pick_theme", "Pick theme"
   def pick_theme
     setup_config
@@ -161,10 +165,10 @@ class NationSyncThor < Thor
     themes = @api.themes
     puts " Done"
     # pp themes
-    
+
     id = HL.choose do |m|
       m.prompt = "Select a theme: "
-      
+
       themes.each do |t|
         # m.choice(t["id"])
         s = t["name"] + HL.color(" (#{t["id"]})", :gray)
@@ -178,7 +182,7 @@ class NationSyncThor < Thor
     save_config!
     puts "Using theme #{id}"
   end
-  
+
 
 end#NationSyncThor
 
